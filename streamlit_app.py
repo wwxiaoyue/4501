@@ -49,7 +49,7 @@ with col1:
             "Electric trim used to temporarily counter nose-down tendency."
         )
         # 临时对抗：只抬高 pitch
-        st.session_state.pitch += 1
+        st.session_state.pitch += 2
 
         # 系统仍在失控 → 本回合发生 runaway
         runaway_effect()
