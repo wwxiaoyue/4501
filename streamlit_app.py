@@ -48,11 +48,9 @@ with col1:
         st.session_state.message = (
             "Electric trim used to temporarily counter nose-down tendency."
         )
-        # 临时对抗：只抬高 pitch
+        # 立刻对抗
         st.session_state.pitch += 2
 
-        # 系统仍在失控 → 本回合发生 runaway
-        runaway_effect()
 
 # ② CUTOUT —— 隔离问题源头
 with col2:
