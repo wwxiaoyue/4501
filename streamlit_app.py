@@ -3,90 +3,100 @@ import streamlit as st
 st.set_page_config(page_title="737 Runaway Trim Simulator", layout="centered")
 
 # ---------- 初始化 ----------
-if "initialized" not in st.session_state:
-    st.session_state.initialized = True
-    st.session_state.pitch = -5
-    st.session_state.trim = -3
-    st.session_state.electric_trim = True
-    st.session_state.stable = False
-    st.session_state.message = "Aircraft begins to pitch nose-down."
-    st.session_state.step = 0
+if "state" not in st.session_state:
+    st.session_state.state = {
+        "pitch": -5,
+        "trim": -3,
+        "electric_trim": True,
+        "step": 0,
+        "stable": False,
+        "log": []
+    }
 
+def log(msg):
+    st.session_state.state["log"].insert(0, msg)
 
-# ---------- 系统逻辑 ----------
 def system_runaway():
-    if st.session_state.electric_trim:
-        st.session_state.pitch -= 1
-        st.session_state.trim -= 1
-
+    if st.session_state.state["electric_trim"]:
+        st.session_state.state["pitch"] -= 1
+        st.session_state.state["trim"] -= 1
+        return "System: Runaway trim activated (pitch -1)"
+    return "System: Runaway stopped"
 
 def check_stable():
-    if st.session_state.pitch >= -1 and not st.session_state.electric_trim:
-        st.session_state.stable = True
-
-
-def advance_step():
-    st.session_state.step += 1
-    system_runaway()
-    check_stable()
-
+    if (
+        not st.session_state.state["electric_trim"]
+        and st.session_state.state["pitch"] >= -1
+    ):
+        st.session_state.state["stable"] = True
 
 # ---------- UI ----------
 st.title("✈️ Boeing 737 Runaway Trim Simulator (Non-MAX)")
 st.write(
-    "You are flying a **Boeing 737 (non-MAX)**. "
-    "A trim malfunction causes the aircraft to pitch nose-down."
+    "Each button press represents **one decision step**. "
+    "You will immediately see what happened."
 )
 
 st.divider()
 
+# 状态区
 st.subheader("📊 Aircraft Status")
-st.write(f"**Time Step:** {st.session_state.step}")
-st.metric("Pitch (deg)", st.session_state.pitch)
-st.metric("Trim", st.session_state.trim)
-st.write("Electric Trim Active:", st.session_state.electric_trim)
+st.metric("Pitch (deg)", st.session_state.state["pitch"])
+st.metric("Trim", st.session_state.state["trim"])
+st.write("Electric Trim Active:", st.session_state.state["electric_trim"])
+st.write("Step:", st.session_state.state["step"])
 
 st.divider()
+
+# 控制区
 st.subheader("🎮 Pilot Controls")
 
 col1, col2, col3 = st.columns(3)
 
 with col1:
     if st.button("Electric Trim ↑"):
-        st.session_state.message = "You counter the trim temporarily."
-        if st.session_state.electric_trim:
-            st.session_state.pitch += 1
-            st.session_state.trim += 1
-        advance_step()
+        st.session_state.state["step"] += 1
+        log(f"Step {st.session_state.state['step']}: Pilot used Electric Trim (+1 pitch)")
+        if st.session_state.state["electric_trim"]:
+            st.session_state.state["pitch"] += 1
+            st.session_state.state["trim"] += 1
+        log(system_runaway())
+        check_stable()
 
 with col2:
     if st.button("CUTOUT Trim"):
-        st.session_state.electric_trim = False
-        st.session_state.message = "Stabilizer trim cut out. Runaway stopped."
-        advance_step()
+        st.session_state.state["step"] += 1
+        st.session_state.state["electric_trim"] = False
+        log(f"Step {st.session_state.state['step']}: Pilot CUT OUT stabilizer trim")
+        log("System: Electric trim disabled")
+        check_stable()
 
 with col3:
     if st.button("Manual Trim Wheel"):
-        if not st.session_state.electric_trim:
-            st.session_state.pitch += 2
-            st.session_state.trim += 2
-            st.session_state.message = "You manually trimmed the aircraft."
+        st.session_state.state["step"] += 1
+        if not st.session_state.state["electric_trim"]:
+            st.session_state.state["pitch"] += 2
+            st.session_state.state["trim"] += 2
+            log(f"Step {st.session_state.state['step']}: Pilot manually trimmed (+2 pitch)")
         else:
-            st.session_state.message = "Manual trim ineffective while runaway continues."
-        advance_step()
+            log(f"Step {st.session_state.state['step']}: Manual trim ineffective")
+        log(system_runaway())
+        check_stable()
 
 st.divider()
 
-# ---------- 结果 ----------
-if st.session_state.stable:
+# 结果区
+if st.session_state.state["stable"]:
     st.success("✅ Aircraft stabilized. You regained control.")
 else:
-    st.warning("⚠️ Aircraft unstable. Choose actions carefully.")
+    st.warning("⚠️ Aircraft unstable.")
 
-st.info(st.session_state.message)
+# 行动日志（即时反馈的关键）
+st.subheader("📝 Action Log (Immediate Feedback)")
+for entry in st.session_state.state["log"][:8]:
+    st.write(entry)
 
 st.caption(
     "Educational simulation for engineering ethics. "
-    "This is not flight training."
+    "Each action produces immediate, visible consequences."
 )
-
