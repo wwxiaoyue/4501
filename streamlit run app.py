@@ -46,7 +46,7 @@ def manual_trim_action():
         hidden_auto_runaway()
 
 # ---------- 页面 ----------
-st.title("✈️ Boeing 737 MAX — Trim Failure Scenario")
+st.title("✈️ Boeing 737 MAX")
 st.write(
     "This simulation models a **737 MAX accident scenario**. "
     "Pilots follow procedures based on earlier 737 aircraft, "
